@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    5a49fac4-991e-4070-916c-5e2a0b1311bd:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 198
+        'y': 99
+      z: 0
+      embeds: []
+    fef8a509-ced8-430b-81d1-a353eb3cbb59:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 315
+        'y': 97
+      z: 0
+      embeds: []
+    b943b41c-78a1-4c80-b3ab-ea3c57fca06f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 461
+        'y': 104
+      z: 0
+      embeds: []
+    f135fd8f-ac4f-48ab-8ad3-5625d0c5d2ad:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 586
+        'y': 105
+      z: 0
+      embeds: []
+      dependson:
+        - fef8a509-ced8-430b-81d1-a353eb3cbb59
+        - b943b41c-78a1-4c80-b3ab-ea3c57fca06f
+    355e45e0-9d36-49a7-8d8d-fc3b7f760b9c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 708
+        'y': 99
+      z: 0
+      embeds: []
+    1453d6ad-0801-4957-a2f6-c9cc5887b06b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 843
+        'y': 100
+      z: 0
+      embeds: []
+      dependson:
+        - b943b41c-78a1-4c80-b3ab-ea3c57fca06f
+Resources:
+  RDSDBI32QQE:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: 10
+      Engine: MySQL
+      MasterUsername: admin
+      MasterUserPassword: muni1234
+      DBInstanceClass: db.t2.micro
+      DBName: vpmsdb
+      DBInstanceIdentifier: rdsnewfinal
+      VPCSecurityGroups:
+        - sg-01361c1aff01f515a
+      EngineVersion: 5.7
+      PubliclyAccessible: true
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5a49fac4-991e-4070-916c-5e2a0b1311bd
+  ELBV2LB1HUDC:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name:  my-load-balancer-new
+      Subnets:
+        - subnet-09e434f2a8b3b7e7c
+        - subnet-03a83a9c26a79aeec
+      Type: network
+      IpAddressType: ipv4
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: fef8a509-ced8-430b-81d1-a353eb3cbb59
+  ELBV2TG4A6L0:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: my-target-group-new
+      Port: 80
+      Protocol: TCP
+      VpcId: vpc-0a77a4c6898363932
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b943b41c-78a1-4c80-b3ab-ea3c57fca06f
+  ELBV2L42QE:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: !Ref ELBV2LB1HUDC
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ELBV2TG4A6L0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: f135fd8f-ac4f-48ab-8ad3-5625d0c5d2ad
+    DependsOn:
+      - ELBV2LB1HUDC
+      - ELBV2TG4A6L0
+  ASLC55LJA:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      LaunchConfigurationName: my-lc-new3
+      ImageId: ami-0fb653ca2d3203ac1
+      InstanceType: t2.micro
+      IamInstanceProfile: role_all
+      KeyName: Ec2all
+      SecurityGroups:
+        - sg-03723ff32a5606bda
+        - endpoint: !GetAtt RDSDBI32QQE.Endpoint.Address
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 355e45e0-9d36-49a7-8d8d-fc3b7f760b9c
+    DependsOn:
+      - RDSDBI32QQE
+  ASASG3CEB8:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AutoScalingGroupName: my-asg-new
+      LaunchTemplate:
+        LaunchTemplateName: my-lc1
+        Version: !GetAtt ASLC55LJA.LatestVersionNumber
+      AvailabilityZones:
+        - us-east-1a
+      DesiredCapacity: 1
+      MaxSize: 2
+      MinSize: 1
+      TargetGroupARNs:
+        - !Ref ELBV2TG4A6L0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1453d6ad-0801-4957-a2f6-c9cc5887b06b
+    DependsOn:
+      - ELBV2TG4A6L0
+  ASG2:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AutoScalingGroupName: my-asg2
+      LaunchTemplate:
+        LaunchTemplateName: my-lc1
+        Version: !GetAtt ASLC55LJA.LatestVersionNumber
+      AvailabilityZones:
+        - us-east-1c
+      DesiredCapacity: 0
+      MaxSize: 0
+      MinSize: 0
+      TargetGroupARNs:
+        - !Ref ELBV2TG4A6L0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1453d6ad-0801-4957-a2f6-c9cc5887b06b
+    DependsOn:
+      - ELBV2TG4A6L0
+       EC2SecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "Database instances security group"
+            VpcId: !Ref VPC
+            SecurityGroupIngress: 
+              - 
+                CidrIp: "*.*.*.*/32"
+                FromPort: 3306
+                IpProtocol: "tcp"
+                ToPort: 3306
+            SecurityGroupEgress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                IpProtocol: "-1"
